@@ -1,42 +1,25 @@
-import os
-from pathlib import Path
-
 # ============================================================
-# GET THE PROJECT ROOT (one level UP from notebooks folder)
+# SAVE PROJECT ROOT TO A CONFIG FILE
+# All other notebooks will read this
 # ============================================================
-NOTEBOOK_DIR = Path(os.getcwd())          # Current = notebooks/
-PROJECT_ROOT = NOTEBOOK_DIR.parent        # Go UP one level = project root
+import json
 
-print(f"📍 Notebook location : {NOTEBOOK_DIR}")
-print(f"📍 Project root      : {PROJECT_ROOT}")
+config = {
+    "project_root": str(PROJECT_ROOT),
+    "raw_data":     str(PROJECT_ROOT / "data/raw"),
+    "processed":    str(PROJECT_ROOT / "data/processed"),
+    "checkpoints":  str(PROJECT_ROOT / "models/checkpoints"),
+    "deployment":   str(PROJECT_ROOT / "models/deployment"),
+    "figures":      str(PROJECT_ROOT / "results/figures"),
+    "metrics":      str(PROJECT_ROOT / "results/metrics"),
+}
 
-# ============================================================
-# CREATE ALL FOLDERS AT PROJECT ROOT
-# ============================================================
-dirs = [
-    "src/models",
-    "src/data",
-    "src/training",
-    "src/utils",
-    "data/raw",
-    "data/processed",
-    "models/checkpoints",
-    "models/deployment",
-    "results/figures",
-    "results/metrics",
-    "deployment/templates"
-]
+# Save config accessible from notebooks folder
+config_path = NOTEBOOK_DIR / "project_config.json"
+with open(config_path, 'w') as f:
+    json.dump(config, f, indent=2)
 
-for d in dirs:
-    full_path = PROJECT_ROOT / d
-    full_path.mkdir(parents=True, exist_ok=True)
-
-# Create __init__.py files
-for module in ["src", "src/models", "src/data", "src/training", "src/utils"]:
-    init_file = PROJECT_ROOT / module / "__init__.py"
-    with open(init_file, 'w') as f:
-        f.write("")
-
-print("\n✅ Project structure created at PROJECT ROOT:")
-for d in dirs:
-    print(f"   📁 {PROJECT_ROOT / d}")
+print(f"✅ Config saved to: {config_path}")
+print(f"\n📋 Config contents:")
+for k, v in config.items():
+    print(f"   {k}: {v}")
