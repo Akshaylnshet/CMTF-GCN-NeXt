@@ -1,25 +1,16 @@
-# ============================================================
-# SAVE PROJECT ROOT TO A CONFIG FILE
-# All other notebooks will read this
-# ============================================================
+import os
 import json
+from pathlib import Path
 
-config = {
-    "project_root": str(PROJECT_ROOT),
-    "raw_data":     str(PROJECT_ROOT / "data/raw"),
-    "processed":    str(PROJECT_ROOT / "data/processed"),
-    "checkpoints":  str(PROJECT_ROOT / "models/checkpoints"),
-    "deployment":   str(PROJECT_ROOT / "models/deployment"),
-    "figures":      str(PROJECT_ROOT / "results/figures"),
-    "metrics":      str(PROJECT_ROOT / "results/metrics"),
-}
+# ============================================================
+# YOUR FIXED PROJECT PATH
+# ============================================================
+PROJECT_ROOT = Path(r"C:\Users\Akshay\CMTF_GCN_NeXt")
 
-# Save config accessible from notebooks folder
-config_path = NOTEBOOK_DIR / "project_config.json"
-with open(config_path, 'w') as f:
-    json.dump(config, f, indent=2)
+print(f"📍 Project Root: {PROJECT_ROOT}")
+print(f"📍 Exists: {PROJECT_ROOT.exists()}")
 
-print(f"✅ Config saved to: {config_path}")
-print(f"\n📋 Config contents:")
-for k, v in config.items():
-    print(f"   {k}: {v}")
+if not PROJECT_ROOT.exists():
+    print("⚠️  Folder not found! Creating it...")
+    PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
+    print("✅ Created!")
