@@ -1,0 +1,42 @@
+import os
+from pathlib import Path
+
+# ============================================================
+# GET THE PROJECT ROOT (one level UP from notebooks folder)
+# ============================================================
+NOTEBOOK_DIR = Path(os.getcwd())          # Current = notebooks/
+PROJECT_ROOT = NOTEBOOK_DIR.parent        # Go UP one level = project root
+
+print(f"📍 Notebook location : {NOTEBOOK_DIR}")
+print(f"📍 Project root      : {PROJECT_ROOT}")
+
+# ============================================================
+# CREATE ALL FOLDERS AT PROJECT ROOT
+# ============================================================
+dirs = [
+    "src/models",
+    "src/data",
+    "src/training",
+    "src/utils",
+    "data/raw",
+    "data/processed",
+    "models/checkpoints",
+    "models/deployment",
+    "results/figures",
+    "results/metrics",
+    "deployment/templates"
+]
+
+for d in dirs:
+    full_path = PROJECT_ROOT / d
+    full_path.mkdir(parents=True, exist_ok=True)
+
+# Create __init__.py files
+for module in ["src", "src/models", "src/data", "src/training", "src/utils"]:
+    init_file = PROJECT_ROOT / module / "__init__.py"
+    with open(init_file, 'w') as f:
+        f.write("")
+
+print("\n✅ Project structure created at PROJECT ROOT:")
+for d in dirs:
+    print(f"   📁 {PROJECT_ROOT / d}")
