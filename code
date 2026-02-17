@@ -1,16 +1,242 @@
-import os
-import json
+#CELL 2 - Create Full Folder Structure
+
+# All folders inside C:\Users\Akshay\CMTF_GCN_NeXt\
+dirs = [
+    "notebooks",
+    "src/models",
+    "src/data",
+    "src/training",
+    "src/utils",
+    "data/raw",
+    "data/processed",
+    "models/checkpoints",
+    "models/deployment",
+    "results/figures",
+    "results/metrics",
+    "deployment/templates"
+]
+
+print("📁 Creating folder structure...\n")
+for d in dirs:
+    full_path = PROJECT_ROOT / d
+    full_path.mkdir(parents=True, exist_ok=True)
+    print(f"   ✅ {full_path}")
+
+# Create __init__.py for Python imports
+for module in ["src", "src/models", "src/data", "src/training", "src/utils"]:
+    init_file = PROJECT_ROOT / module / "__init__.py"
+    with open(init_file, 'w') as f:
+        f.write("")
+    print(f"   ✅ {init_file} (init)")
+
+print("\n✅ All folders created!")
+
+#CELL 3 - Save Config File
+# Save config so ALL notebooks know the paths
+config = {
+    "project_root" : str(PROJECT_ROOT),
+    "notebooks"    : str(PROJECT_ROOT / "notebooks"),
+    "raw_data"     : str(PROJECT_ROOT / "data" / "raw"),
+    "processed"    : str(PROJECT_ROOT / "data" / "processed"),
+    "checkpoints"  : str(PROJECT_ROOT / "models" / "checkpoints"),
+    "deployment"   : str(PROJECT_ROOT / "models" / "deployment"),
+    "figures"      : str(PROJECT_ROOT / "results" / "figures"),
+    "metrics"      : str(PROJECT_ROOT / "results" / "metrics"),
+    "src"          : str(PROJECT_ROOT / "src"),
+    "flask_app"    : str(PROJECT_ROOT / "deployment"),
+}
+
+# Save inside notebooks folder (where all notebooks run from)
+config_path = PROJECT_ROOT / "notebooks" / "project_config.json"
+with open(config_path, 'w') as f:
+    json.dump(config, f, indent=2)
+
+# Also save at project root level
+with open(PROJECT_ROOT / "project_config.json", 'w') as f:
+    json.dump(config, f, indent=2)
+
+print(f"✅ Config saved!\n")
+print("📋 Your Project Paths:")
+for k, v in config.items():
+    print(f"   {k:<15} → {v}")
+
+#CELL 4 - Point to Your Downloaded Dataset
+# ============================================================
+# TELL THE PROJECT WHERE YOUR DATASET IS
+# Change this to where you extracted the HMS dataset
+# ============================================================
+
+# Option A: If dataset is INSIDE your project folder already
+DATASET_PATH = PROJECT_ROOT / "data" / "raw"
+
+# Option B: If dataset is somewhere else on your PC
+# DATASET_PATH = Path(r"C:\Users\Akshay\Downloads\hms-harmful-brain-activity-classification")
+# DATASET_PATH = Path(r"D:\Datasets\hms")
+
+print(f"📁 Looking for dataset at:\n   {DATASET_PATH}\n")
+
+# Check what's there
+if DATASET_PATH.exists():
+    contents = list(DATASET_PATH.iterdir())
+    if contents:
+        print("📋 Found these files/folders:")
+        for item in contents:
+            if item.is_dir():
+                count = sum(1 for _ in item.iterdir())
+                print(f"   📁 {item.name}/ ({count} items)")
+            else:
+                size_mb = item.stat().st_size / 1e6
+                print(f"   📄 {item.name} ({size_mb:.1f} MB)")
+    else:
+        print("⚠️  Folder is EMPTY - copy your dataset files here")
+else:
+    print("⚠️  Folder not found!")
+
+print(f"\n👇 If dataset is elsewhere, update DATASET_PATH above and re-run")
+
+#CELL 5 - Copy/Link Dataset to Project (if elsewhere)
+
+import shutil
+
+# ============================================================
+# ONLY RUN THIS IF YOUR DATASET IS IN A DIFFERENT LOCATION
+# It will copy necessary files into your project
+# Skip this cell if dataset is already in data/raw/
+# ============================================================
+
+SOURCE_PATH = Path(r"C:\Users\Akshay\Downloads\hms-harmful-brain-activity-classification")
+# Change ↑ to wherever your HMS dataset actually is
+
+TARGET_PATH = PROJECT_ROOT / "data" / "raw"
+
+if SOURCE_PATH.exists() and SOURCE_PATH != TARGET_PATH:
+    print(f"📋 Source: {SOURCE_PATH}")
+    print(f"📋 Target: {TARGET_PATH}")
+    print("⚠️  This will copy your dataset - may take a while for large files")
+    
+    confirm = input("Type 'yes' to copy, or 'no' to skip: ")
+    
+    if confirm.lower() == 'yes':
+        for item in SOURCE_PATH.iterdir():
+            src = SOURCE_PATH / item.name
+            dst = TARGET_PATH / item.name
+            if not dst.exists():
+                print(f"   Copying {item.name}...")
+                if item.is_dir():
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy2(src, dst)
+        print("✅ Dataset copied!")
+    else:
+        print("⏭️  Skipped - manually copy your dataset to:")
+        print(f"   {TARGET_PATH}")
+else:
+    print("✅ Dataset already at correct location - no copy needed!")
+
+#CELL 6 - Verify Dataset
+import pandas as pd
+
+# Auto-find dataset location
+possible_paths = [
+    PROJECT_ROOT / "data" / "raw",
+    PROJECT_ROOT / "data" / "raw" / "hms-harmful-brain-activity-classification",
+]
+
+data_path = None
+for p in possible_paths:
+    if (p / "train.csv").exists():
+        data_path = p
+        break
+
+if data_path is None:
+    print("❌ train.csv not found! Check your dataset path")
+    print("   Searched in:")
+    for p in possible_paths:
+        print(f"   - {p}")
+else:
+    train_df = pd.read_csv(data_path / "train.csv")
+    eeg_folder  = data_path / "train_eegs"
+    spec_folder = data_path / "train_spectrograms"
+
+    print("="*55)
+    print("✅  DATASET VERIFIED")
+    print("="*55)
+    print(f"📁 Path:      {data_path}")
+    print(f"📄 Samples:   {len(train_df)}")
+    print(f"📡 EEG files: {len(list(eeg_folder.glob('*.parquet'))) if eeg_folder.exists() else '❌ Not found'}")
+    print(f"🖼️  Spec files: {len(list(spec_folder.iterdir())) if spec_folder.exists() else '❌ Not found'}")
+    print(f"\n📊 Class Distribution:")
+    print(train_df['expert_consensus'].value_counts().to_string())
+
+    # Update config with verified paths
+    config["raw_data"]    = str(data_path)
+    config["train_csv"]   = str(data_path / "train.csv")
+    config["eeg_folder"]  = str(eeg_folder)
+    config["spec_folder"] = str(spec_folder)
+
+    for path in [PROJECT_ROOT / "notebooks" / "project_config.json",
+                 PROJECT_ROOT / "project_config.json"]:
+        with open(path, 'w') as f:
+            json.dump(config, f, indent=2)
+
+    print("\n✅ Config updated with verified dataset path!")
+
+#CELL 7 - Install All Requirements
+print("📦 Installing all required packages...")
+print("⏳ This will take 5-10 minutes...\n")
+
+!pip install torch==2.1.0 torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cu118 -q
+!pip install torch-geometric -q
+!pip install torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-2.1.0+cu118.html -q
+!pip install timm==0.9.5 einops -q
+!pip install numpy pandas scipy scikit-learn -q
+!pip install matplotlib seaborn tqdm -q
+!pip install flask fastapi uvicorn -q
+!pip install onnx onnxruntime -q
+!pip install pillow opencv-python pyarrow fastparquet -q
+!pip install ipywidgets -q
+
+print("\n✅ All packages installed!")
+
+#CELL 8 - Final Verification
+import torch, timm, numpy, pandas, sklearn, flask
 from pathlib import Path
 
-# ============================================================
-# YOUR FIXED PROJECT PATH
-# ============================================================
+print("="*55)
+print("   FINAL SETUP VERIFICATION")
+print("="*55)
+
+# Check Python packages
+print("\n📦 Package Versions:")
+print(f"   ✅ PyTorch:    {torch.__version__}")
+print(f"   ✅ CUDA:       {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"   ✅ GPU:        {torch.cuda.get_device_name(0)}")
+    print(f"   ✅ VRAM:       {torch.cuda.get_device_properties(0).total_memory/1e9:.1f} GB")
+print(f"   ✅ timm:       {timm.__version__}")
+print(f"   ✅ NumPy:      {numpy.__version__}")
+print(f"   ✅ Pandas:     {pandas.__version__}")
+
+# Check folder structure
+print("\n📁 Folder Structure:")
 PROJECT_ROOT = Path(r"C:\Users\Akshay\CMTF_GCN_NeXt")
+expected_dirs = [
+    "notebooks", "src/models", "src/data", "src/training", "src/utils",
+    "data/raw", "data/processed", "models/checkpoints",
+    "models/deployment", "results/figures", "results/metrics",
+    "deployment/templates"
+]
+for d in expected_dirs:
+    full = PROJECT_ROOT / d
+    status = "✅" if full.exists() else "❌"
+    print(f"   {status} {PROJECT_ROOT}\\{d}")
 
-print(f"📍 Project Root: {PROJECT_ROOT}")
-print(f"📍 Exists: {PROJECT_ROOT.exists()}")
+# Check config
+config_path = PROJECT_ROOT / "notebooks" / "project_config.json"
+print(f"\n⚙️  Config file: {'✅ Found' if config_path.exists() else '❌ Missing'}")
 
-if not PROJECT_ROOT.exists():
-    print("⚠️  Folder not found! Creating it...")
-    PROJECT_ROOT.mkdir(parents=True, exist_ok=True)
-    print("✅ Created!")
+print("\n" + "="*55)
+print("✅  NB01 COMPLETE!")
+print("="*55)
+print("\n🚀 Next: Open NB03_Data_Preprocessing.ipynb")
+print("   (NB02 skipped - dataset already downloaded)")
