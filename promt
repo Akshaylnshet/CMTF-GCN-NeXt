@@ -1,0 +1,332 @@
+You are a Senior Deep Learning Research Engineer specializing in EEG signal processing, multimodal learning, and medical AI systems.
+
+Your task is to design and implement a complete, research-grade, modular PyTorch pipeline for the problem:
+
+"HMS Harmful Brain Activity Classification"
+
+The objective is to build a scientifically grounded, high-accuracy multimodal deep learning system that integrates raw EEG signals and spectrogram representations, suitable for journal publication (IEEE/Elsevier/Springer level).
+
+==================================================
+RESEARCH OBJECTIVE
+==================
+
+Develop a multimodal architecture that explicitly models:
+
+1. Temporal dynamics of EEG signals
+2. Spatial relationships between electrodes
+3. Time-frequency representations via spectrograms
+4. Cross-modal interactions between EEG and spectrogram features
+
+The system must balance:
+
+* High classification accuracy
+* Model interpretability
+* Computational efficiency (trainable on a single 12GB GPU)
+* Reproducibility
+
+==================================================
+DATA DESCRIPTION
+================
+
+Inputs:
+
+1. Raw EEG signals:
+
+   * Shape: [channels × time]
+   * Multi-channel biosignal (≈20 electrodes)
+
+2. Spectrograms:
+
+   * Time-frequency representation (from EEG)
+   * Stored as image tensors or derived from parquet
+
+Output:
+
+* Multi-class classification (6 classes)
+* Targets are SOFT LABELS (probability distributions from expert votes)
+
+==================================================
+MODEL ARCHITECTURE
+==================
+
+Design a dual-branch multimodal architecture:
+
+---
+
+## (A) EEG BRANCH (Temporal + Spatial)
+
+Implement a hybrid temporal-spatial encoder:
+
+1. Multi-scale 1D CNN:
+
+   * Parallel convolutions with kernel sizes (3, 5, 7)
+   * Capture multi-resolution temporal features
+
+2. Dilated Convolutions:
+
+   * Dilation rates: 1, 2, 4, 8
+   * Justify: expands receptive field for long EEG sequences
+
+3. Channel Attention:
+
+   * Use Squeeze-and-Excitation (SE block)
+   * Learns importance of each electrode channel
+
+4. Graph Attention Network (GAT) [MANDATORY]:
+
+   * Nodes = EEG electrodes
+   * Edges = predefined adjacency (distance or correlation-based)
+   * Use 1–2 layers with multi-head attention
+   * Output: spatially-aware EEG embedding
+
+Return:
+
+* EEG feature vector
+
+---
+
+## (B) SPECTROGRAM BRANCH (Frequency Domain)
+
+Use a CNN-based backbone:
+
+* ConvNeXt-Tiny (preferred) OR EfficientNet-B0
+* Pretrained on ImageNet
+* Input: spectrogram images
+
+Apply:
+
+* Global Average Pooling
+
+Return:
+
+* Spectrogram feature embedding
+
+---
+
+## (C) CROSS-MODAL FUSION (CORE CONTRIBUTION)
+
+Implement a TWO-STAGE fusion strategy:
+
+Step 1: Cross-Attention
+
+* EEG features → Query
+* Spectrogram features → Key, Value
+* Learn cross-modal interactions
+
+Step 2: Gated Fusion
+
+* Learn adaptive weighting:
+
+  F_fused = α * F_eeg + (1 - α) * F_spec
+
+* α should be dynamically learned (via sigmoid gate)
+
+Output:
+
+* Final fused feature vector
+
+---
+
+## (D) CLASSIFICATION HEAD
+
+* LayerNorm
+* Dropout (0.3–0.5)
+* Linear layer
+* Output: 6-class probability distribution
+
+==================================================
+LOSS FUNCTION
+=============
+
+MANDATORY:
+
+* Kullback-Leibler Divergence Loss
+
+Implementation:
+
+* Apply log_softmax to predictions
+* Targets are soft labels (normalized votes)
+
+Justification:
+
+* Preserves expert uncertainty in labels
+
+==================================================
+TRAINING STRATEGY
+=================
+
+Implement a TWO-STAGE training pipeline:
+
+---
+
+Stage 1:
+
+* Train on full dataset
+
+Stage 2:
+
+* Fine-tune on high-confidence samples
+  (e.g., total_votes ≥ threshold)
+
+---
+
+Optimization:
+
+* Optimizer: AdamW
+* LR Scheduler: Cosine Annealing
+* Mixed Precision Training (FP16)
+* Gradient Accumulation
+
+Regularization:
+
+* Mixup (mandatory)
+* SpecAugment (time + frequency masking)
+* Gaussian noise (for EEG signals)
+
+Cross-validation:
+
+* Stratified K-Fold (k=5)
+
+==================================================
+DATA PIPELINE
+=============
+
+Implement:
+
+1. EEG Preprocessing:
+
+   * Per-sample normalization
+   * Optional bandpass filtering
+
+2. Spectrogram Handling:
+
+   * Load from parquet or precomputed arrays
+   * Convert to image tensors
+
+3. Custom PyTorch Dataset:
+
+   * Returns (EEG, spectrogram, soft label)
+
+4. DataLoader:
+
+   * Efficient batching
+   * Augmentation support
+
+==================================================
+INTERPRETABILITY (IMPORTANT FOR PUBLICATION)
+============================================
+
+Include modules/utilities for:
+
+1. Attention Visualization:
+
+   * EEG temporal attention maps
+
+2. GAT Analysis:
+
+   * Electrode importance weights
+
+3. Grad-CAM:
+
+   * Spectrogram feature visualization
+
+==================================================
+EVALUATION METRICS
+==================
+
+Compute and log:
+
+* Accuracy
+* Macro F1-score
+* Confusion Matrix
+* ROC-AUC
+
+==================================================
+ABLATION STUDY SUPPORT
+======================
+
+Code must allow easy toggling of:
+
+* Without GAT
+* Without cross-attention
+* Without gated fusion
+* EEG-only model
+* Spectrogram-only model
+
+==================================================
+ENSEMBLE (OPTIONAL)
+===================
+
+Train an additional spectrogram-only model.
+
+Combine predictions:
+
+final_pred = 0.7 * hybrid + 0.3 * cnn_model
+
+==================================================
+CODE REQUIREMENTS
+=================
+
+1. Use PyTorch (preferred) or PyTorch Lightning
+
+2. Modular structure:
+
+   * models/
+   * datasets/
+   * training/
+   * utils/
+   * configs/
+
+3. Provide:
+
+   * Model classes
+   * Training loop
+   * Validation loop
+   * Inference pipeline
+
+4. Ensure:
+
+   * Clean, readable, well-commented code
+   * Reproducibility (seed setting)
+   * GPU efficiency (fits 12GB VRAM)
+
+==================================================
+OUTPUT FORMAT
+=============
+
+Generate the code step-by-step:
+
+1. Folder structure
+2. Dataset class
+3. EEG model
+4. Spectrogram model
+5. Fusion module
+6. Full model class
+7. Training pipeline
+8. Evaluation pipeline
+9. Inference code
+
+For each section:
+
+* Provide code
+* Explain design decisions briefly
+
+==================================================
+GOAL
+====
+
+Produce a complete system that:
+
+* Achieves high accuracy (~88–91%)
+* Is scientifically justified
+* Is suitable for journal publication
+* Is extensible for future research
+
+Do NOT overcomplicate with heavy transformers or MoE.
+
+Focus on:
+
+* Strong inductive biases
+* Stability
+* Interpretability
+* Scientific clarity
